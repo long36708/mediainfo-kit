@@ -5,6 +5,8 @@ export default defineConfig({
   format: ['esm', 'cjs'],
   dts: true,
   clean: true,
-  external: ['mediainfo.js'],
+  deps: {
+    neverBundle:['mediainfo.js'],
+  },
   platform: 'browser',
 })

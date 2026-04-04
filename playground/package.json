@@ -13,7 +13,7 @@
     "mediainfo.js": "^0.3.7"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "vite": "^6.0.0"
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
   }
 }

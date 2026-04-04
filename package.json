@@ -36,18 +36,18 @@
     "media-info",
     "wasm"
   ],
-  "author": "",
+  "author": "longmo",
   "license": "MIT",
   "peerDependencies": {
     "mediainfo.js": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "jsdom": "^26.0.0",
+    "jsdom": "^29.0.1",
     "mediainfo.js": "^0.3.7",
-    "tsdown": "^0.12.9",
-    "typescript": "^5.9.3",
-    "vitest": "^3.0.0"
+    "tsdown": "^0.21.7",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   },
   "repository": {
     "type": "git",
