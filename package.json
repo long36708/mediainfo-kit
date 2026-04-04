@@ -20,8 +20,14 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "playground": "pnpm -F playground dev",
+    "prepublishOnly": "npm run build && npm run test"
   },
+  "workspaces": [
+    "playground"
+  ],
   "keywords": [
     "mediainfo",
     "video",
@@ -36,12 +42,15 @@
     "mediainfo.js": "^0.3.0"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
+    "jsdom": "^26.0.0",
     "mediainfo.js": "^0.3.7",
-    "tsdown": "^0.12.0",
-    "typescript": "^5.9.0"
+    "tsdown": "^0.12.9",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/long36708/mediainfo-kit.git"
   }
 }

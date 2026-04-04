@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mediainfo-kit Playground</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 { color: #333; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .card h2 { margin-top: 0; color: #555; }
+    input[type="file"] { margin-bottom: 12px; }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    pre {
+      background: #f8f8f8;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .info-item { padding: 8px; background: #f8f8f8; border-radius: 4px; }
+    .info-item label { font-weight: bold; color: #666; }
+    .error { color: #dc3545; background: #ffe6e6; padding: 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>🎬 mediainfo-kit Playground</h1>
+
+  <div class="card">
+    <h2>📁 从文件获取</h2>
+    <input type="file" id="fileInput" accept="video/*,audio/*">
+    <button id="parseFileBtn" disabled>解析文件</button>
+  </div>
+
+  <div class="card">
+    <h2>🌐 从 URL 获取</h2>
+    <input type="text" id="urlInput" placeholder="输入媒体文件 URL">
+    <button id="parseUrlBtn">解析 URL</button>
+  </div>
+
+  <div class="card">
+    <h2>📊 结果</h2>
+    <div id="result"></div>
+  </div>
+
+  <script type="module">
+    import {
+      getMediaInfoFromFile,
+      getMediaInfoFromUrl,
+      getGeneralTrack,
+      getVideoTracks,
+      getAudioTracks,
+      formatDuration,
+      formatFileSize,
+      formatBitRate
+    } from 'mediainfo-kit'
+
+    const fileInput = document.getElementById('fileInput')
+    const parseFileBtn = document.getElementById('parseFileBtn')
+    const urlInput = document.getElementById('urlInput')
+    const parseUrlBtn = document.getElementById('parseUrlBtn')
+    const resultDiv = document.getElementById('result')
+
+    let selectedFile = null
+
+    fileInput.addEventListener('change', (e) => {
+      selectedFile = e.target.files[0]
+      parseFileBtn.disabled = !selectedFile
+    })
+
+    // WASM 本地路径配置
+    const wasmOptions = {
+      wasmLoader: (path) => `/${path}`
+    }
+
+    parseFileBtn.addEventListener('click', async () => {
+      if (!selectedFile) return
+      resultDiv.innerHTML = '<p>解析中...</p>'
+      try {
+        const result = await getMediaInfoFromFile(selectedFile, wasmOptions)
+        renderResult(result)
+      } catch (err) {
+        resultDiv.innerHTML = `<div class="error">错误: ${err.message}</div>`
+      }
+    })
+
+    parseUrlBtn.addEventListener('click', async () => {
+      const url = urlInput.value.trim()
+      if (!url) return
+      resultDiv.innerHTML = '<p>解析中...</p>'
+      try {
+        const result = await getMediaInfoFromUrl(url, wasmOptions)
+        renderResult(result)
+      } catch (err) {
+        resultDiv.innerHTML = `<div class="error">错误: ${err.message}</div>`
+      }
+    })
+
+    function renderResult(result) {
+      const general = getGeneralTrack(result)
+      const videos = getVideoTracks(result)
+      const audios = getAudioTracks(result)
+
+      let html = ''
+
+      if (general) {
+        html += `
+          <h3>容器信息</h3>
+          <div class="info-grid">
+            <div class="info-item"><label>格式:</label> ${general.Format || 'N/A'}</div>
+            <div class="info-item"><label>大小:</label> ${formatFileSize(general.FileSize)}</div>
+            <div class="info-item"><label>时长:</label> ${formatDuration(general.Duration)}</div>
+            <div class="info-item"><label>比特率:</label> ${formatBitRate(general.OverallBitRate)}</div>
+          </div>
+        `
+      }
+
+      if (videos.length > 0) {
+        html += `<h3>视频轨道 (${videos.length})</h3>`
+        videos.forEach((v, i) => {
+          html += `
+            <div class="info-grid">
+              <div class="info-item"><label>轨道 ${i + 1}:</label> ${v.Format || 'N/A'}</div>
+              <div class="info-item"><label>分辨率:</label> ${v.Width}x${v.Height}</div>
+              <div class="info-item"><label>帧率:</label> ${v.FrameRate || 'N/A'} fps</div>
+              <div class="info-item"><label>比特率:</label> ${formatBitRate(v.BitRate)}</div>
+            </div>
+          `
+        })
+      }
+
+      if (audios.length > 0) {
+        html += `<h3>音频轨道 (${audios.length})</h3>`
+        audios.forEach((a, i) => {
+          html += `
+            <div class="info-grid">
+              <div class="info-item"><label>轨道 ${i + 1}:</label> ${a.Format || 'N/A'}</div>
+              <div class="info-item"><label>采样率:</label> ${a.SamplingRate || 'N/A'} Hz</div>
+              <div class="info-item"><label>声道:</label> ${a.Channels || 'N/A'}</div>
+              <div class="info-item"><label>比特率:</label> ${formatBitRate(a.BitRate)}</div>
+            </div>
+          `
+        })
+      }
+
+      html += `
+        <h3>原始数据</h3>
+        <pre>${JSON.stringify(result, null, 2)}</pre>
+      `
+
+      resultDiv.innerHTML = html
+    }
+  </script>
+</body>
+</html>

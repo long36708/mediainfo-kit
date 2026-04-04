@@ -265,21 +265,21 @@ export function getTextTracks(result: MediaInfoResult): TextTrack[] {
 // ============ 格式化工具 ============
 
 /**
- * 格式化时长（秒转 HH:MM:SS.mmm）
+ * 格式化时长（秒转 HH:MM:SS）
  */
 export function formatDuration(seconds: number | undefined): string {
   if (seconds === undefined) return 'N/A'
 
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = seconds % 60
+  const secs = Math.floor(seconds % 60)
 
-  const pad = (n: number, decimals = 0) => n.toFixed(decimals).padStart(2, '0')
+  const pad = (n: number) => n.toString().padStart(2, '0')
 
   if (hours > 0) {
-    return `${pad(hours)}:${pad(minutes)}:${pad(secs, 3)}`
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`
   }
-  return `${pad(minutes)}:${pad(secs, 3)}`
+  return `${pad(minutes)}:${pad(secs)}`
 }
 
 /**
