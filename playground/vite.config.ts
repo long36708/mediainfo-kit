@@ -43,14 +43,17 @@ export default defineConfig({
   server: {
     port: 5174,
   },
-  // resolve: {
-  //   alias: {
-  //     'mediainfo-kit': resolve(__dirname, '../src/index.ts'),
-  //   },
-  // },
+  resolve: {
+    alias: {
+      'mediainfo-kit': resolve(__dirname, '../src/index.ts'),
+    },
+  },
   // base: './',
   // 将根目录设为静态资源目录，.wasm 文件可被直接访问
   // publicDir: '.',
+  // publicDir: 'public',  // 使用专门的 public 目录
+  // publicDir: false,
+  // assetsInclude: ['**/*.wasm'],  // 将 .wasm 文件作为资源处理
   build: {
     // 排除 .wasm 文件复制到 dist
     // rollupOptions: {

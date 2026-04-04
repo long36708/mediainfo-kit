@@ -47,6 +47,10 @@ export interface MediaInfoKitOptions {
    * - 未指定: 默认使用 jsdelivr CDN
    */
   wasmLoader?: WasmLoader
+  /** 重试次数，默认 3 次 */
+  retries?: number
+  /** 重试延迟（毫秒），默认 1000ms，支持指数退避函数 */
+  retryDelay?: number | ((attempt: number) => number)
 }
 
 /** 默认 WASM CDN 路径 */
@@ -54,6 +58,49 @@ const DEFAULT_WASM_CDN = 'https://cdn.jsdelivr.net/npm/mediainfo.js@0.3.7/dist/'
 
 /** 缓存的 MediaInfo 实例 */
 let cachedMediaInfo: MediaInfo<FormatType> | null = null
+
+/**
+ * 延迟函数
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * 带重试的 fetch
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  retries: number,
+  retryDelay: number | ((attempt: number) => number),
+): Promise<Response> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, init)
+      if (response.ok || response.status === 206) {
+        return response
+      }
+      // 4xx 错误不重试
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+      }
+      lastError = new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+    } catch (err) {
+      lastError = err as Error
+    }
+
+    // 最后一次尝试不再等待
+    if (attempt < retries) {
+      const delayMs = typeof retryDelay === 'function' ? retryDelay(attempt) : retryDelay
+      await delay(delayMs)
+    }
+  }
+
+  throw lastError
+}
 
 /**
  * 创建 locateFile 函数
@@ -137,10 +184,9 @@ export async function getMediaInfoFromUrl(
   url: string,
   options: MediaInfoKitOptions = {},
 ): Promise<MediaInfoResult> {
-  const response = await fetch(url, { method: 'HEAD' })
-  if (!response.ok) {
-    throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
-  }
+  const { retries = 3, retryDelay = 1000 } = options
+
+  const response = await fetchWithRetry(url, { method: 'HEAD' }, retries, retryDelay)
 
   const contentLength = response.headers.get('Content-Length')
   if (!contentLength) {
@@ -159,13 +205,12 @@ export async function getMediaInfoFromUrl(
     }
 
     const end = Math.min(offset + size - 1, fileSize - 1)
-    const rangeResponse = await fetch(url, {
-      headers: { Range: `bytes=${offset}-${end}` },
-    })
-
-    if (!rangeResponse.ok) {
-      throw new Error(`Failed to fetch chunk: ${rangeResponse.status} ${rangeResponse.statusText}`)
-    }
+    const rangeResponse = await fetchWithRetry(
+      url,
+      { headers: { Range: `bytes=${offset}-${end}` } },
+      retries,
+      retryDelay,
+    )
 
     const buffer = await rangeResponse.arrayBuffer()
     return new Uint8Array(buffer)
