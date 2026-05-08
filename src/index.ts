@@ -24,6 +24,23 @@ export type {
   OtherTrack,
 }
 
+export type { MoovLocationResult } from './mp4-moov-detector'
+export {
+  detectMoovLocation,
+  detectMoovFromFile,
+  detectMoovFromBuffer,
+  detectMoovFromUrl,
+} from './mp4-moov-detector'
+
+export type { FormatDetectResult, VideoFormat } from './format-detector'
+export { FormatDetector } from './format-detector'
+
+export type { MediaInfoProbeOptions } from './media-info-probe'
+export { MediaInfoProbe } from './media-info-probe'
+
+export type { ProbeOptions, UnifiedProbeResult } from './probe'
+export { probe, detectFormat } from './probe'
+
 /**
  * WASM 文件加载策略
  */
@@ -68,8 +85,9 @@ function delay(ms: number): Promise<void> {
 
 /**
  * 带重试的 fetch
+ * @internal
  */
-async function fetchWithRetry(
+export async function fetchWithRetry(
   url: string,
   init: RequestInit,
   retries: number,

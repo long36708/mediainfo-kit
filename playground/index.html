@@ -3,80 +3,636 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mediainfo-kit Playground</title>
+  <title>MediaInfo Kit - Media Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --secondary: #8b5cf6;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --error: #ef4444;
+      
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #94a3b8;
+      --border: #e2e8f0;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #64748b;
+        --border: #334155;
+      }
+    }
+
+    * { 
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 800px;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      height: 100vh;
+      padding: 2rem 1rem;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
-      background: #f5f5f5;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
     }
-    h1 { color: #333; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      animation: fadeInDown 0.6s ease-out;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 1.5rem;
+      overflow: hidden;
+    }
+
+    .input-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .result-panel {
+      overflow: hidden;
+    }
+
+    /* Cards */
     .card {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: var(--bg-primary);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+      animation: fadeInUp 0.6s ease-out backwards;
     }
-    .card h2 { margin-top: 0; color: #555; }
-    input[type="file"] { margin-bottom: 12px; }
+
+    .card.upload-card,
+    .card.url-card {
+      flex-shrink: 0;
+    }
+
+    .card.result-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 2px;
+    }
+
+    /* Upload Area */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      background: var(--bg-secondary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      opacity: 0;
+      transition: opacity var(--transition-normal);
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary);
+      transform: scale(1.01);
+    }
+
+    .upload-area:hover::before {
+      opacity: 0.05;
+    }
+
+    .upload-area.drag-over {
+      border-color: var(--primary);
+      background: var(--bg-tertiary);
+    }
+
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .upload-text {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .upload-hint {
+      font-size: 0.875rem;
+      color: var(--text-tertiary);
+      position: relative;
+      z-index: 1;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    /* Input Fields */
+    .input-group {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
     input[type="text"] {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      flex: 1;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-family: inherit;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: all var(--transition-fast);
     }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    /* Buttons */
     button {
-      background: #007bff;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
       color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
+      padding: 0.875rem 2rem;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
     }
-    button:hover { background: #0056b3; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
+
+    button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    button:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Result Section */
+    .result-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .result-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 0.5rem;
+      min-height: 0;
+    }
+
+    /* Custom scrollbar for result content */
+    .result-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .result-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .result-content::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .result-content::-webkit-scrollbar-thumb:hover {
+      background: var(--text-tertiary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-tertiary);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 3rem;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Info Grid */
+    .info-grid { 
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .info-item { 
+      padding: 1.25rem;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      transition: all var(--transition-fast);
+    }
+
+    .info-item:hover {
+      background: var(--bg-tertiary);
+      transform: translateX(4px);
+    }
+
+    .info-item label { 
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-item .value {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Track Sections */
+    .track-section {
+      margin-bottom: 2rem;
+    }
+
+    .track-header {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .track-badge {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Raw Data */
+    .raw-data-toggle {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid var(--border);
+    }
+
+    .toggle-btn {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border: 2px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      width: 100%;
+    }
+
+    .toggle-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
     pre {
-      background: #f8f8f8;
-      padding: 12px;
-      border-radius: 4px;
+      background: var(--bg-secondary);
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
       overflow-x: auto;
-      font-size: 12px;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      border: 1px solid var(--border);
+      margin-top: 1rem;
+      display: none;
     }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .info-item { padding: 8px; background: #f8f8f8; border-radius: 4px; }
-    .info-item label { font-weight: bold; color: #666; }
-    .error { color: #dc3545; background: #ffe6e6; padding: 12px; border-radius: 4px; }
+
+    pre.visible {
+      display: block;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Error State */
+    .error { 
+      color: var(--error);
+      background: rgba(239, 68, 68, 0.1);
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      border-left: 4px solid var(--error);
+      font-weight: 500;
+    }
+
+    /* Animations */
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .input-panel {
+        overflow-y: visible;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+        height: auto;
+        overflow-y: auto;
+      }
+
+      .container {
+        height: auto;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+      }
+
+      .card {
+        padding: 1.5rem;
+      }
+
+      .input-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-tertiary);
+    }
   </style>
 </head>
 <body>
-  <h1>🎬 mediainfo-kit Playground</h1>
+  <div class="container">
+    <header class="header">
+      <h1>🎬 MediaInfo Kit</h1>
+      <p>Professional Media File Analyzer</p>
+    </header>
 
-  <div class="card">
-    <h2>📁 从文件获取</h2>
-    <input type="file" id="fileInput" accept="video/*,audio/*">
-    <button id="parseFileBtn" disabled>解析文件</button>
-  </div>
+    <main>
+      <div class="input-panel">
+        <div class="card upload-card">
+          <h2 class="card-title">Upload Media File</h2>
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drop your file here or click to browse</div>
+            <div class="upload-hint">Supports video and audio files</div>
+          </div>
+          <input type="file" id="fileInput" accept="video/*,audio/*">
+        </div>
 
-  <div class="card">
-    <h2>🌐 从 URL 获取</h2>
-    <input type="text" id="urlInput" placeholder="输入媒体文件 URL">
-    <button id="parseUrlBtn">解析 URL</button>
-  </div>
+        <div class="card url-card">
+          <h2 class="card-title">Analyze from URL</h2>
+          <div class="input-group">
+            <input type="text" id="urlInput" placeholder="Enter media file URL...">
+            <button id="parseUrlBtn">Analyze</button>
+          </div>
+        </div>
+      </div>
 
-  <div class="card">
-    <h2>📊 结果</h2>
-    <div id="result"></div>
+      <div class="result-panel">
+        <div class="card result-card result-section">
+          <h2 class="card-title">Analysis Results</h2>
+          <div class="result-content" id="result">
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <p>No media analyzed yet. Upload a file or enter a URL to get started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script type="module">
     import {
       getMediaInfoFromFile,
       getMediaInfoFromUrl,
+      detectMoovLocation,
       getGeneralTrack,
       getVideoTracks,
       getAudioTracks,
@@ -85,48 +641,126 @@
       formatBitRate
     } from 'mediainfo-kit'
 
+    const uploadArea = document.getElementById('uploadArea')
     const fileInput = document.getElementById('fileInput')
-    const parseFileBtn = document.getElementById('parseFileBtn')
     const urlInput = document.getElementById('urlInput')
     const parseUrlBtn = document.getElementById('parseUrlBtn')
     const resultDiv = document.getElementById('result')
 
     let selectedFile = null
 
-    fileInput.addEventListener('change', (e) => {
-      selectedFile = e.target.files[0]
-      parseFileBtn.disabled = !selectedFile
+    // Upload area interactions
+    uploadArea.addEventListener('click', () => fileInput.click())
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      uploadArea.classList.add('drag-over')
     })
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('drag-over')
+    })
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault()
+      uploadArea.classList.remove('drag-over')
+      const files = e.dataTransfer.files
+      if (files.length > 0 && (files[0].type.startsWith('video/') || files[0].type.startsWith('audio/'))) {
+        handleFile(files[0])
+      }
+    })
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0])
+      }
+    })
+
+    function handleFile(file) {
+      selectedFile = file
+      showLoading()
+      parseFile(file)
+    }
 
     // WASM 本地路径配置
     const wasmOptions = {
       wasmLoader: (path) => `/${path}`
     }
 
-    parseFileBtn.addEventListener('click', async () => {
-      if (!selectedFile) return
-      resultDiv.innerHTML = '<p>解析中...</p>'
+    async function parseFile(file) {
       try {
-        const result = await getMediaInfoFromFile(selectedFile, wasmOptions)
-        renderResult(result)
+        // 先检测 moov 位置(如果是 MP4)
+        let moovResult = null
+        if (file.name.toLowerCase().endsWith('.mp4') || file.name.toLowerCase().endsWith('.mov')) {
+          try {
+            moovResult = await detectMoovLocation(file)
+          } catch (e) {
+            console.warn('Moov detection failed:', e)
+          }
+        }
+        
+        const result = await getMediaInfoFromFile(file, wasmOptions)
+        renderResult(result, moovResult)
       } catch (err) {
-        resultDiv.innerHTML = `<div class="error">错误: ${err.message}</div>`
+        showError(err.message)
       }
-    })
+    }
 
     parseUrlBtn.addEventListener('click', async () => {
       const url = urlInput.value.trim()
       if (!url) return
-      resultDiv.innerHTML = '<p>解析中...</p>'
+      showLoading()
       try {
+        // 先检测 moov 位置(如果是 MP4 URL)
+        let moovResult = null
+        if (url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov')) {
+          try {
+            moovResult = await detectMoovLocation(url)
+          } catch (e) {
+            console.warn('Moov detection failed:', e)
+          }
+        }
+        
         const result = await getMediaInfoFromUrl(url, wasmOptions)
-        renderResult(result)
+        renderResult(result, moovResult)
       } catch (err) {
-        resultDiv.innerHTML = `<div class="error">错误: ${err.message}</div>`
+        showError(err.message)
       }
     })
 
-    function renderResult(result) {
+    // Enter key support for URL input
+    urlInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && urlInput.value.trim()) {
+        parseUrlBtn.click()
+      }
+    })
+
+    function showLoading() {
+      resultDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <span>Analyzing media file...</span>
+        </div>
+      `
+    }
+
+    function showError(message) {
+      resultDiv.innerHTML = `<div class="error">❌ Error: ${message}</div>`
+    }
+
+    function toggleRawData() {
+      const pre = document.getElementById('rawData')
+      const btn = document.getElementById('toggleBtn')
+      if (pre.classList.contains('visible')) {
+        pre.classList.remove('visible')
+        btn.textContent = 'Show Raw JSON Data'
+      } else {
+        pre.classList.add('visible')
+        btn.textContent = 'Hide Raw JSON Data'
+      }
+    }
+
+    function renderResult(result, moovResult = null) {
       const general = getGeneralTrack(result)
       const videos = getVideoTracks(result)
       const audios = getAudioTracks(result)
@@ -135,51 +769,148 @@
 
       if (general) {
         html += `
-          <h3>容器信息</h3>
-          <div class="info-grid">
-            <div class="info-item"><label>格式:</label> ${general.Format || 'N/A'}</div>
-            <div class="info-item"><label>大小:</label> ${formatFileSize(general.FileSize)}</div>
-            <div class="info-item"><label>时长:</label> ${formatDuration(general.Duration)}</div>
-            <div class="info-item"><label>比特率:</label> ${formatBitRate(general.OverallBitRate)}</div>
+          <div class="track-section">
+            <div class="track-header">
+              Container Information
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Format</label>
+                <div class="value">${general.Format || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <label>File Size</label>
+                <div class="value">${formatFileSize(general.FileSize)}</div>
+              </div>
+              <div class="info-item">
+                <label>Duration</label>
+                <div class="value">${formatDuration(general.Duration)}</div>
+              </div>
+              <div class="info-item">
+                <label>Overall Bit Rate</label>
+                <div class="value">${formatBitRate(general.OverallBitRate)}</div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+
+      // Show moov location info for MP4 files
+      if (moovResult) {
+        const moovStatus = moovResult.location === 'front' ? '✅' : 
+                          moovResult.location === 'back' ? '⚠️' : '❓'
+        const moovText = moovResult.location === 'front' ? 'Web Optimized' :
+                        moovResult.location === 'back' ? 'Needs Optimization' : 'Unknown'
+        
+        html += `
+          <div class="track-section">
+            <div class="track-header">
+              MP4 Optimization Status
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Status</label>
+                <div class="value">${moovStatus} ${moovText}</div>
+              </div>
+              <div class="info-item">
+                <label>Moov Position</label>
+                <div class="value">${moovResult.location}</div>
+              </div>
+              ${moovResult.moovOffset ? `
+              <div class="info-item">
+                <label>Moov Offset</label>
+                <div class="value">${moovResult.moovOffset} bytes</div>
+              </div>
+              ` : ''}
+              ${moovResult.moovSize ? `
+              <div class="info-item">
+                <label>Moov Size</label>
+                <div class="value">${formatFileSize(moovResult.moovSize)}</div>
+              </div>
+              ` : ''}
+            </div>
           </div>
         `
       }
 
       if (videos.length > 0) {
-        html += `<h3>视频轨道 (${videos.length})</h3>`
+        html += `
+          <div class="track-section">
+            <div class="track-header">
+              Video Tracks
+              <span class="track-badge">${videos.length}</span>
+            </div>
+        `
         videos.forEach((v, i) => {
           html += `
             <div class="info-grid">
-              <div class="info-item"><label>轨道 ${i + 1}:</label> ${v.Format || 'N/A'}</div>
-              <div class="info-item"><label>分辨率:</label> ${v.Width}x${v.Height}</div>
-              <div class="info-item"><label>帧率:</label> ${v.FrameRate || 'N/A'} fps</div>
-              <div class="info-item"><label>比特率:</label> ${formatBitRate(v.BitRate)}</div>
+              <div class="info-item">
+                <label>Track ${i + 1} - Codec</label>
+                <div class="value">${v.Format || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <label>Resolution</label>
+                <div class="value">${v.Width}×${v.Height}</div>
+              </div>
+              <div class="info-item">
+                <label>Frame Rate</label>
+                <div class="value">${v.FrameRate || 'N/A'} fps</div>
+              </div>
+              <div class="info-item">
+                <label>Bit Rate</label>
+                <div class="value">${formatBitRate(v.BitRate)}</div>
+              </div>
             </div>
           `
         })
+        html += `</div>`
       }
 
       if (audios.length > 0) {
-        html += `<h3>音频轨道 (${audios.length})</h3>`
+        html += `
+          <div class="track-section">
+            <div class="track-header">
+              Audio Tracks
+              <span class="track-badge">${audios.length}</span>
+            </div>
+        `
         audios.forEach((a, i) => {
           html += `
             <div class="info-grid">
-              <div class="info-item"><label>轨道 ${i + 1}:</label> ${a.Format || 'N/A'}</div>
-              <div class="info-item"><label>采样率:</label> ${a.SamplingRate || 'N/A'} Hz</div>
-              <div class="info-item"><label>声道:</label> ${a.Channels || 'N/A'}</div>
-              <div class="info-item"><label>比特率:</label> ${formatBitRate(a.BitRate)}</div>
+              <div class="info-item">
+                <label>Track ${i + 1} - Codec</label>
+                <div class="value">${a.Format || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <label>Sample Rate</label>
+                <div class="value">${a.SamplingRate || 'N/A'} Hz</div>
+              </div>
+              <div class="info-item">
+                <label>Channels</label>
+                <div class="value">${a.Channels || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <label>Bit Rate</label>
+                <div class="value">${formatBitRate(a.BitRate)}</div>
+              </div>
             </div>
           `
         })
+        html += `</div>`
       }
 
       html += `
-        <h3>原始数据</h3>
-        <pre>${JSON.stringify(result, null, 2)}</pre>
+        <div class="raw-data-toggle">
+          <button class="toggle-btn" id="toggleBtn" onclick="window.toggleRawData()">Show Raw JSON Data</button>
+          <pre id="rawData">${JSON.stringify(result, null, 2)}</pre>
+        </div>
       `
 
       resultDiv.innerHTML = html
     }
+
+    // Expose toggle function globally
+    window.toggleRawData = toggleRawData
   </script>
 </body>
 </html>

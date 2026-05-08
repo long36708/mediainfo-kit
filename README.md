@@ -9,6 +9,7 @@
 - 🎯 **类型安全** - 完整 TypeScript 支持
 - 🛠️ **格式化工具** - 时长、文件大小、比特率格式化
 - 🌐 **灵活的 WASM 加载** - 支持 CDN、本地路径或自定义加载器
+- ⚡ **MP4 Moov 检测** - 快速判断 MP4 是否为 web optimized(无需 WASM)
 
 ## 安装
 
@@ -188,6 +189,72 @@ import { closeMediaInfo } from 'mediainfo-kit'
 // 释放 MediaInfo 实例（通常不需要手动调用）
 closeMediaInfo()
 ```
+
+### MP4 Moov 位置检测
+
+快速检测 MP4 文件中 moov box 的位置,判断是否为 web optimized。
+
+**优势:**
+- ⚡ 无需加载 WASM,纯 JavaScript 实现
+- 🚀 超快速,只需读取文件头部/尾部
+- 💾 内存友好,大文件不会加载到内存
+- 🌐 网络优化,URL 检测使用 Range 请求
+
+```ts
+import { detectMoovLocation } from 'mediainfo-kit'
+
+// 检测本地文件
+const result = await detectMoovLocation(file)
+console.log(result.location) // 'front' | 'back' | 'unknown'
+
+// 检测远程视频
+const result = await detectMoovLocation('https://example.com/video.mp4')
+
+// 检测内存缓冲区
+const result = await detectMoovLocation(arrayBuffer)
+```
+
+**返回值:**
+```ts
+interface MoovLocationResult {
+  location: 'front' | 'back' | 'unknown'
+  moovOffset?: number    // moov 偏移量
+  moovSize?: number      // moov 大小
+  fileSize?: number      // 文件总大小
+  detected: boolean      // 是否检测成功
+}
+```
+
+**使用场景:**
+```ts
+// 判断是否为 Web Optimized
+const result = await detectMoovLocation(file)
+if (result.location === 'front') {
+  console.log('✅ 已优化 - 支持流式播放')
+} else if (result.location === 'back') {
+  console.log('⚠️ 未优化 - 建议转换')
+  console.log('使用命令: ffmpeg -i input.mp4 -movflags faststart output.mp4')
+}
+
+// 播放器预加载策略
+if (result.location === 'front') {
+  videoElement.src = url
+  videoElement.play()  // 可以立即播放
+} else {
+  await preloadVideo(url)  // 需要先缓冲
+  videoElement.play()
+}
+```
+
+**配置选项:**
+```ts
+await detectMoovLocation(file, {
+  frontChunkSize: 256 * 1024,  // 前部检测块大小(默认 256KB)
+  backChunkSize: 64 * 1024     // 后部检测块大小(默认 64KB)
+})
+```
+
+📖 详细文档: [docs/moov-detection.md](docs/moov-detection.md)
 
 ## 类型导出
 
