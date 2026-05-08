@@ -10,6 +10,7 @@
 - 🛠️ **格式化工具** - 时长、文件大小、比特率格式化
 - 🌐 **灵活的 WASM 加载** - 支持 CDN、本地路径或自定义加载器
 - ⚡ **MP4 Moov 检测** - 快速判断 MP4 是否为 web optimized(无需 WASM)
+- 🔍 **统一 Probe API** - 一次调用完成格式检测 + 元信息 + moov 位置
 
 ## 安装
 
@@ -255,6 +256,79 @@ await detectMoovLocation(file, {
 ```
 
 📖 详细文档: [docs/moov-detection.md](docs/moov-detection.md)
+
+### 统一 Probe API
+
+`probe()` 函数提供一站式媒体文件分析,一次调用完成:
+1. **快速格式检测**(无需 WASM)
+2. **详细元信息探测**(需要 WASM)
+3. **(可选) moov 位置检测**
+
+```ts
+import { probe } from 'mediainfo-kit'
+
+// 基本用法
+const result = await probe(file)
+console.log(result.format.format) // 'mp4' | 'mov' | 'avi' | etc.
+console.log(result.metadata.media?.track)
+
+// 启用 moov 检测
+const result = await probe('https://example.com/video.mp4', {
+  detectMoov: true
+})
+console.log(result.moovLocation?.location) // 'front' | 'back'
+```
+
+**返回值:**
+```ts
+interface UnifiedProbeResult {
+  format: FormatDetectResult       // 格式检测结果
+  metadata: MediaInfoResult        // 元信息
+  moovLocation?: MoovLocationResult // moov 位置(可选)
+  sourceType: 'file' | 'url' | 'buffer' | 'blob'
+}
+```
+
+**支持的输入类型:**
+- `File` - 本地文件对象
+- `string` - URL (包括 blob: URL)
+- `ArrayBuffer` - 内存缓冲区
+
+### 快速格式检测
+
+如果只需要知道文件格式,不需要详细信息,可以使用 `detectFormat()`,它**无需加载 WASM**,速度极快:
+
+```ts
+import { detectFormat } from 'mediainfo-kit'
+
+const format = await detectFormat(file)
+console.log(format.format)     // 'mp4' | 'mov' | 'avi' | 'mkv' | etc.
+console.log(format.mimeType)   // 'video/mp4'
+console.log(format.confidence) // 0-1 置信度
+```
+
+**支持的格式:**
+- MP4, MOV, AVI, WMV, MKV, FLV, TS
+- HIK (海康私有格式)
+- RTP 流
+
+### MediaInfoProbe 类
+
+面向对象的 API,提供更好的状态管理和资源控制:
+
+```ts
+import { MediaInfoProbe } from 'mediainfo-kit'
+
+const probe = new MediaInfoProbe({
+  chunkSize: 256 * 1024,
+  retries: 3
+})
+
+const result = await probe.probeFromFile(file)
+
+// 使用完毕后释放资源
+probe.destroy()
+```
 
 ## 类型导出
 
